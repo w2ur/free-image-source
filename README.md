@@ -1,5 +1,5 @@
 ---
-name: "wikimedia-source"
+name: "Wikimedia Source"
 tagline_fr: "Trouver une image Wikimedia librement réutilisable, avec son attribution."
 tagline_en: "Find a freely-licensed Wikimedia image for a thing, with attribution."
 about_en: "Find a freely-licensed Wikimedia image for a thing, with attribution. Zero dependencies, TypeScript, ESM."
