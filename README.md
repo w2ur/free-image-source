@@ -101,14 +101,24 @@ policy. Supply your own, e.g.:
 "MyApp/1.0 (https://example.org; contact@example.org)"
 ```
 
-## Provenance
+## Tests
 
-Extracted from
-[`w2ur/ip-yeah`](https://github.com/w2ur/ip-yeah)'s
-`scripts/lib/wikipedia.ts`, at commit
-[`1096187`](https://github.com/w2ur/ip-yeah/commit/1096187f5254d86134daf39c22615b1425a64d2f),
-before that repo was archived. The original module was beer-specific
-(hardcoded brewery/hop/IPA title maps and a beer-keyword regex baked into
-the scoring); this package generalizes those into caller-supplied options
-while keeping the API-calling, license-filtering, reject-pattern, scoring,
-and three-strategy fallback logic intact.
+`npm test` builds, then runs 14 tests under `node --test` — the Node
+built-in runner, no test-framework dependency.
+
+**No test touches the network.** Every test that exercises
+`findWikimediaImage` injects a stub `fetch` through `options.fetch`, and
+that stub throws on any request it does not recognise. An unexpected API
+call fails the suite loudly instead of passing quietly against live
+Wikimedia — which also means the suite tells you when a refactor changes
+*which* endpoints get called, not just what comes back.
+
+## Stability
+
+`findWikimediaImage` is the entire public API, and its signature is
+settled. The package is versioned `0.1.0` and installed from a git ref
+rather than npm, so pin a commit if you need reproducible builds.
+
+---
+
+Made with care by [William](https://william.revah.paris)
