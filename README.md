@@ -3,6 +3,8 @@ name: "wikimedia-source"
 tagline_fr: "Trouver une image Wikimedia librement réutilisable, avec son attribution."
 tagline_en: "Find a freely-licensed Wikimedia image for a thing, with attribution."
 about_en: "Find a freely-licensed Wikimedia image for a thing, with attribution. Zero dependencies, TypeScript, ESM."
+facts_fr: "3 stratégies de recherche, 6 licences autorisées, 14 tests sans réseau."
+facts_en: "3 search strategies, 6 allowed licenses, 14 tests that never touch the network."
 ---
 
 # wikimedia-source
