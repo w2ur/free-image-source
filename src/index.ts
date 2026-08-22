@@ -1,10 +1,29 @@
-import type { ApiContext } from "./api.js";
-import { DEFAULT_ALLOWED_LICENSES, DEFAULT_REJECT_PATTERNS, DEFAULT_GENERIC_WORDS } from "./defaults.js";
-import { tryPageImage, tryImageList, tryCommonsSearch } from "./strategies.js";
+import {
+  type ApiContext,
+  type FileInfo,
+  DEFAULT_COMMONS_API,
+  getImageInfo,
+  wikipediaApiUrl,
+} from "./api.js";
+import {
+  DEFAULT_ALLOWED_LICENSES,
+  DEFAULT_GENERIC_WORDS,
+  DEFAULT_MAX_RETRIES,
+  DEFAULT_REJECT_PATTERNS,
+  DEFAULT_TIMEOUT_MS,
+} from "./defaults.js";
+import {
+  tryPageImage,
+  tryImageList,
+  tryCommonsSearch,
+  isUsableFile,
+  candidateFrom,
+} from "./strategies.js";
 import type {
   Attribution,
   FindImageOptions,
   TitleResolver,
+  WikiImageCandidate,
   WikimediaImageResult,
 } from "./types.js";
 
@@ -15,6 +34,13 @@ export type {
   WikiImageCandidate,
   WikimediaImageResult,
 } from "./types.js";
+
+export { formatAttribution, type FormatAttributionOptions } from "./attribution.js";
+export {
+  DEFAULT_ALLOWED_LICENSES,
+  DEFAULT_REJECT_PATTERNS,
+  DEFAULT_GENERIC_WORDS,
+} from "./defaults.js";
 
 function resolveTitle(
   resolver: TitleResolver | undefined,
@@ -30,6 +56,22 @@ function toSet(values: Iterable<string> | undefined, fallback: readonly string[]
   return new Set(values ?? fallback);
 }
 
+function attributionFrom(id: string, c: WikiImageCandidate): Attribution {
+  return {
+    id,
+    source: "wikimedia",
+    sourceUrl: c.descriptionurl,
+    license: c.license,
+    licenseCode: c.licenseCode,
+    licenseUrl: c.licenseUrl,
+    author: c.artist,
+    authorUrl: c.artistUrl,
+    credit: c.credit,
+    restrictions: c.restrictions,
+    fileTitle: c.title,
+  };
+}
+
 /**
  * Find a freely-licensed Wikimedia image for an entity, with attribution.
  *
@@ -37,22 +79,32 @@ function toSet(values: Iterable<string> | undefined, fallback: readonly string[]
  *  1. If a Wikipedia article title is known (via `options.wikipediaTitles`),
  *     fetch and score all of that article's images, and return the best one
  *     with an allowed license.
- *  2. If (1) found no acceptable candidate, fall back to the article's main
- *     thumbnail image (license unknown — attributed as "See Wikipedia").
+ *  2. If (1) found no acceptable candidate, fall back to the article's lead
+ *     image — which is put through the same reject list and license
+ *     allowlist as every other candidate, and skipped if it fails either.
  *  3. Otherwise (or if no title was known), search Wikimedia Commons
  *     directly by name, score and filter results, and return the best
  *     acceptable candidate.
  *
- * Returns `null` if no acceptable image was found by any strategy.
+ * Returns `null` if no acceptable image was found by any strategy. **A
+ * non-null result is always a file whose license matched the allowlist** —
+ * there is no path that returns an unverified image.
  */
 export async function findWikimediaImage(
   id: string,
   name: string,
   options: FindImageOptions
 ): Promise<WikimediaImageResult | null> {
+  const lang = options.lang ?? "en";
+
   const ctx: ApiContext = {
     userAgent: options.userAgent,
     fetch: options.fetch ?? globalThis.fetch,
+    wikipediaApi: options.wikipediaApiUrl ?? wikipediaApiUrl(lang),
+    commonsApi: options.commonsApiUrl ?? DEFAULT_COMMONS_API,
+    timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    maxRetries: options.maxRetries ?? DEFAULT_MAX_RETRIES,
+    signal: options.signal,
   };
 
   const allowedLicenses = options.allowedLicenses ?? DEFAULT_ALLOWED_LICENSES;
@@ -73,29 +125,25 @@ export async function findWikimediaImage(
     // Strategy 1: score all article images, verify license.
     const bestImage = await tryImageList(ctx, wikiTitle, name, scoreOptions, allowedLicenses);
     if (bestImage) {
-      const attribution: Attribution = {
-        id,
-        source: "wikimedia",
-        sourceUrl: bestImage.descriptionurl,
-        license: bestImage.license,
-        author: bestImage.artist,
-        fileTitle: bestImage.title,
-      };
-      return { imageUrl: bestImage.url, attribution };
+      return { imageUrl: bestImage.url, attribution: attributionFrom(id, bestImage) };
     }
 
-    // Strategy 2: fall back to the article's main thumbnail.
+    // Strategy 2: the article's lead image — verified, not assumed.
     const pageImage = await tryPageImage(ctx, wikiTitle);
-    if (pageImage) {
-      const attribution: Attribution = {
-        id,
-        source: "wikimedia",
-        sourceUrl: `https://en.wikipedia.org/wiki/${wikiTitle}`,
-        license: "See Wikipedia",
-        author: "See Wikipedia",
-        fileTitle: `From article: ${pageImage.pageTitle}`,
-      };
-      return { imageUrl: pageImage.url, attribution };
+    if (pageImage?.fileTitle) {
+      let info: FileInfo | null = null;
+      try {
+        info = await getImageInfo(ctx, pageImage.fileTitle);
+      } catch {
+        info = null;
+      }
+      if (info && isUsableFile(info, pageImage.fileTitle, rejectPatterns, allowedLicenses)) {
+        const candidate = candidateFrom(info, pageImage.fileTitle, 0);
+        return {
+          imageUrl: candidate.url || pageImage.url,
+          attribution: attributionFrom(id, candidate),
+        };
+      }
     }
   }
 
@@ -111,15 +159,7 @@ export async function findWikimediaImage(
     allowedLicenses
   );
   if (commonsImage) {
-    const attribution: Attribution = {
-      id,
-      source: "wikimedia",
-      sourceUrl: commonsImage.descriptionurl,
-      license: commonsImage.license,
-      author: commonsImage.artist,
-      fileTitle: commonsImage.title,
-    };
-    return { imageUrl: commonsImage.url, attribution };
+    return { imageUrl: commonsImage.url, attribution: attributionFrom(id, commonsImage) };
   }
 
   return null;

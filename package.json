@@ -1,10 +1,9 @@
 {
   "name": "wikimedia-source",
-  "version": "0.1.0",
-  "description": "Find a freely-licensed Wikimedia image for a thing, with attribution.",
+  "version": "0.2.0",
+  "description": "Find a freely-licensed Wikimedia image for anything, with the attribution needed to publish it. Zero dependencies.",
   "type": "module",
   "license": "MIT",
-  "private": true,
   "author": "William Revah",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -15,7 +14,9 @@
     }
   },
   "files": [
-    "dist/src"
+    "dist/src",
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=20"
@@ -24,10 +25,41 @@
     "build": "tsc",
     "pretest": "npm run build",
     "test": "node --test dist/test/*.test.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm test"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
+    "fast-check": "^4.9.0",
     "typescript": "^5.7.2"
+  },
+  "keywords": [
+    "wikimedia",
+    "wikipedia",
+    "wikimedia-commons",
+    "creative-commons",
+    "image-search",
+    "attribution",
+    "open-license",
+    "public-domain",
+    "license-compliance",
+    "zero-dependencies",
+    "typescript",
+    "esm"
+  ],
+  "homepage": "https://github.com/w2ur/wikimedia-source#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/w2ur/wikimedia-source.git"
+  },
+  "bugs": {
+    "url": "https://github.com/w2ur/wikimedia-source/issues"
+  },
+  "bin": {
+    "wikimedia-source": "./dist/src/cli.js"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
   }
 }

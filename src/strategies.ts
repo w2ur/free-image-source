@@ -1,29 +1,74 @@
-import { type ApiContext, wikiApi, commonsApi, getImageInfo, isLicenseAllowed } from "./api.js";
+import {
+  type ApiContext,
+  type FileInfo,
+  wikiApi,
+  commonsApi,
+  getImageInfos,
+  isLicenseAllowed,
+  licenseForGating,
+  isRejected,
+  toFileInfo,
+} from "./api.js";
 import { scoreImage, type ScoreOptions, NO_MATCH_SCORE } from "./scoring.js";
 import type { WikiImageCandidate } from "./types.js";
 
-/** Strategy A: use the `pageimages` prop for the article's main image. */
+/** How many top-scored candidates to resolve metadata for. One request, so this is cheap. */
+const CANDIDATE_DEPTH = 5;
+
+export function candidateFrom(info: FileInfo, title: string, score: number): WikiImageCandidate {
+  return {
+    title: info.title || title,
+    url: info.url,
+    descriptionurl: info.descriptionurl,
+    license: info.license,
+    licenseCode: info.licenseCode,
+    licenseUrl: info.licenseUrl,
+    artist: info.artist,
+    artistUrl: info.artistUrl,
+    credit: info.credit,
+    restrictions: info.restrictions,
+    score,
+  };
+}
+
+function pagesOf<T>(pages: T[] | Record<string, T> | undefined): T[] {
+  if (!pages) return [];
+  return Array.isArray(pages) ? pages : Object.values(pages);
+}
+
+/**
+ * Strategy A: the article's own lead image, via `pageimages`.
+ *
+ * Returns the `File:` title alongside the thumbnail URL (`piprop=name`) so
+ * the caller can run the same license and reject checks as every other
+ * strategy. Returning only a URL — as this used to — meant the fallback
+ * path silently bypassed both.
+ */
 export async function tryPageImage(
   ctx: ApiContext,
   wikiTitle: string
-): Promise<{ url: string; pageTitle: string } | null> {
+): Promise<{ url: string; pageTitle: string; fileTitle?: string } | null> {
   const data = (await wikiApi(ctx, {
     action: "query",
     titles: wikiTitle,
     prop: "pageimages",
+    piprop: "name|thumbnail",
     pithumbsize: "800",
   })) as {
     query?: {
-      pages?: Record<string, { thumbnail?: { source: string }; title: string }>;
+      pages?:
+        | Array<{ thumbnail?: { source: string }; title: string; pageimage?: string }>
+        | Record<string, { thumbnail?: { source: string }; title: string; pageimage?: string }>;
     };
   };
 
-  const pages = data.query?.pages;
-  if (!pages) return null;
-
-  for (const page of Object.values(pages)) {
+  for (const page of pagesOf(data.query?.pages)) {
     if (page.thumbnail?.source) {
-      return { url: page.thumbnail.source, pageTitle: page.title };
+      return {
+        url: page.thumbnail.source,
+        pageTitle: page.title,
+        fileTitle: page.pageimage ? `File:${page.pageimage}` : undefined,
+      };
     }
   }
 
@@ -45,16 +90,15 @@ export async function tryImageList(
     imlimit: "50",
   })) as {
     query?: {
-      pages?: Record<string, { images?: Array<{ title: string }> }>;
+      pages?:
+        | Array<{ images?: Array<{ title: string }> }>
+        | Record<string, { images?: Array<{ title: string }> }>;
     };
   };
 
-  const pages = data.query?.pages;
-  if (!pages) return null;
-
   const allImages: Array<{ title: string; score: number }> = [];
 
-  for (const page of Object.values(pages)) {
+  for (const page of pagesOf(data.query?.pages)) {
     if (!page.images) continue;
     for (const img of page.images) {
       const score = scoreImage(img.title, entityName, { ...scoreOptions, strict: false });
@@ -68,26 +112,27 @@ export async function tryImageList(
 
   allImages.sort((a, b) => b.score - a.score);
 
-  // Try top candidates until we find one with an allowed license.
-  for (const candidate of allImages.slice(0, 5)) {
-    const info = await getImageInfo(ctx, candidate.title);
-    if (!info) continue;
-    if (!isLicenseAllowed(info.license, allowedLicenses)) continue;
+  // One batched request for the top candidates, rather than one per candidate.
+  const top = allImages.slice(0, CANDIDATE_DEPTH);
+  const infos = await getImageInfos(ctx, top.map((c) => c.title));
 
-    return {
-      title: candidate.title,
-      url: info.url,
-      descriptionurl: info.descriptionurl,
-      license: info.license,
-      artist: info.artist,
-      score: candidate.score,
-    };
+  for (const candidate of top) {
+    const info = infos.get(candidate.title);
+    if (!info) continue;
+    if (!isLicenseAllowed(licenseForGating(info), allowedLicenses)) continue;
+    return candidateFrom(info, candidate.title, candidate.score);
   }
 
   return null;
 }
 
-/** Strategy C: search Wikimedia Commons directly by filename/description. */
+/**
+ * Strategy C: search Wikimedia Commons directly by filename/description.
+ *
+ * Uses `generator=search` with `prop=imageinfo`, so the search results
+ * arrive with their license metadata already attached — one request in
+ * place of a search plus up to five sequential metadata lookups.
+ */
 export async function tryCommonsSearch(
   ctx: ApiContext,
   entityName: string,
@@ -95,49 +140,53 @@ export async function tryCommonsSearch(
   scoreOptions: Omit<ScoreOptions, "strict">,
   allowedLicenses: readonly string[]
 ): Promise<WikiImageCandidate | null> {
-  const searchQuery = buildSearchQuery(entityName);
-
   const data = (await commonsApi(ctx, {
     action: "query",
-    list: "search",
-    srsearch: searchQuery,
-    srnamespace: "6", // File: namespace
-    srlimit: "10",
+    generator: "search",
+    gsrsearch: buildSearchQuery(entityName),
+    gsrnamespace: "6", // File: namespace
+    gsrlimit: "10",
+    prop: "imageinfo",
+    iiprop: "url|extmetadata",
+    iiurlwidth: "800",
   })) as {
     query?: {
-      search?: Array<{ title: string }>;
+      pages?:
+        | Array<Parameters<typeof toFileInfo>[0]>
+        | Record<string, Parameters<typeof toFileInfo>[0]>;
     };
   };
 
-  const results = data.query?.search;
-  if (!results || results.length === 0) return null;
-
   // Strict scoring: requires a distinctive name-part match and, if
   // supplied, a domain-keyword match.
-  const scored = results
-    .map((r) => ({
-      title: r.title,
-      score: scoreImage(r.title, entityName, { ...scoreOptions, strict: true }),
-    }))
-    .filter((r) => r.score > NO_MATCH_SCORE)
+  const scored = pagesOf(data.query?.pages)
+    .map((page) => {
+      const title = page.title ?? "";
+      return {
+        info: toFileInfo(page),
+        title,
+        score: scoreImage(title, entityName, { ...scoreOptions, strict: true }),
+      };
+    })
+    .filter((r) => r.info !== null && r.score > NO_MATCH_SCORE)
     .sort((a, b) => b.score - a.score);
 
-  if (scored.length === 0) return null;
-
-  for (const candidate of scored.slice(0, 5)) {
-    const info = await getImageInfo(ctx, candidate.title, true);
-    if (!info) continue;
-    if (!isLicenseAllowed(info.license, allowedLicenses)) continue;
-
-    return {
-      title: candidate.title,
-      url: info.url,
-      descriptionurl: info.descriptionurl,
-      license: info.license,
-      artist: info.artist,
-      score: candidate.score,
-    };
+  for (const candidate of scored.slice(0, CANDIDATE_DEPTH)) {
+    const info = candidate.info as FileInfo;
+    if (!isLicenseAllowed(licenseForGating(info), allowedLicenses)) continue;
+    return candidateFrom(info, candidate.title, candidate.score);
   }
 
   return null;
+}
+
+/** Shared by strategy A's follow-up check — is this file usable at all? */
+export function isUsableFile(
+  info: FileInfo,
+  title: string,
+  rejectPatterns: readonly RegExp[],
+  allowedLicenses: readonly string[]
+): boolean {
+  if (isRejected(title, rejectPatterns)) return false;
+  return isLicenseAllowed(licenseForGating(info), allowedLicenses);
 }

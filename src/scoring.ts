@@ -1,4 +1,4 @@
-import { isRejected } from "./api.js";
+import { isRejected, spaced } from "./api.js";
 
 /** Score below which a candidate is discarded outright. */
 export const NO_MATCH_SCORE = -100;
@@ -26,17 +26,6 @@ function nameParts(name: string): string[] {
     .filter((p) => p.length > 2);
 }
 
-/**
- * Wikimedia filenames use underscores in place of spaces (e.g.
- * "File:Eddystone_Lighthouse.jpg"), and underscore is a word character in
- * JS regex — so a caller-authored `\bword\b` keyword regex would silently
- * never match a real Commons filename. Space out separators before testing
- * `keywords` so `\b` behaves the way callers expect.
- */
-function spacedForKeywordMatch(lower: string): string {
-  return lower.replace(/[_-]/g, " ");
-}
-
 export function scoreImage(
   filename: string,
   entityName: string,
@@ -46,7 +35,9 @@ export function scoreImage(
 
   const lower = filename.toLowerCase();
   const parts = nameParts(entityName);
-  const matchesKeywords = options.keywords?.test(spacedForKeywordMatch(lower)) ?? false;
+  // `spaced` because underscore is a word character in JS regex, so a
+  // caller-authored /\bword\b/ would otherwise never match File:A_Word.jpg.
+  const matchesKeywords = options.keywords?.test(spaced(lower)) ?? false;
 
   if (options.strict) {
     // Require a distinctive (non-generic) name part to match — this

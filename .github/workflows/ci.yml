@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20", "22", "24"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  gate:
+    name: gate
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: always()
+    steps:
+      # A job excluded by `if:` reports "skipped", a job dropped from
+      # `needs:` reports nothing, and `all(.[]; .result=="success")` over an
+      # empty set returns true — so an aggregate that only asks "did
+      # anything fail?" reports success on zero coverage. This asserts a
+      # named list computed up front instead, and refuses an empty one.
+      - name: Assert every expected check ran and succeeded
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          EXPECTED="test"
+          missing=0
+          for check in $EXPECTED; do
+            result=$(printf '%s' "$RESULTS" | jq -r --arg k "$check" '.[$k].result // "ABSENT"')
+            echo "$check -> $result"
+            if [ "$result" != "success" ]; then
+              echo "::error::expected check '$check' did not succeed (got: $result)"
+              missing=1
+            fi
+          done
+          if [ -z "$EXPECTED" ]; then
+            echo "::error::the expected-check list is empty; this gate would pass on zero coverage"
+            exit 1
+          fi
+          exit "$missing"

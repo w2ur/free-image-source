@@ -6,11 +6,31 @@ export interface Attribution {
   /** The caller-supplied id this image was sourced for. */
   id: string;
   source: "wikimedia";
-  /** The Wikimedia/Wikipedia page describing the file (its "File:" or article page). */
+  /** The Wikimedia/Wikipedia page describing the file (its "File:" page). */
   sourceUrl: string;
+  /** Human-readable license name, e.g. "CC BY-SA 4.0". */
   license: string;
+  /**
+   * Machine-readable license code from `extmetadata.License`, e.g.
+   * `"cc-by-sa-4.0"`. `undefined` when Wikimedia did not supply one.
+   */
+  licenseCode?: string;
+  /** Canonical URL of the license deed, when Wikimedia supplies one. */
+  licenseUrl?: string;
+  /** Author name, HTML stripped and entities decoded. */
   author: string;
-  /** The "File:..." title on Wikimedia, or a description of the source article. */
+  /** The author's Wikimedia user or homepage URL, when the credit links out. */
+  authorUrl?: string;
+  /** Free-text credit line from the file page ("Own work", a source URL, ...). */
+  credit?: string;
+  /**
+   * Non-copyright restrictions Commons flags on the file — trademark,
+   * personality rights, insignia. Empty when unrestricted. **A permissive
+   * license does not clear these**; they are surfaced so callers can act
+   * on them rather than discover them later.
+   */
+  restrictions?: string;
+  /** The "File:..." title on Wikimedia. */
   fileTitle: string;
 }
 
@@ -45,6 +65,19 @@ export interface FindImageOptions {
   wikipediaTitles?: TitleResolver;
 
   /**
+   * Wikipedia language edition to query, as a subdomain code. Defaults to
+   * `"en"`. Wikimedia Commons is shared across languages and is always
+   * queried at commons.wikimedia.org.
+   */
+  lang?: string;
+
+  /** Full override for the Wikipedia API endpoint. Takes precedence over `lang`. */
+  wikipediaApiUrl?: string;
+
+  /** Full override for the Commons API endpoint. */
+  commonsApiUrl?: string;
+
+  /**
    * Regex confirming a candidate filename is relevant to the caller's
    * domain (e.g. /\b(cat|feline)\b/i). Used to:
    *  - gate acceptance during Commons search (strategy 3), where name
@@ -63,8 +96,8 @@ export interface FindImageOptions {
   buildSearchQuery?: (name: string) => string;
 
   /**
-   * License strings (matched as lowercase, hyphen-normalized substrings)
-   * that are acceptable to use. Defaults to a permissive-license allowlist
+   * License codes (matched as lowercase, hyphen-normalized) that are
+   * acceptable to use. Defaults to a permissive-license allowlist
    * (CC-BY, CC-BY-SA, CC0, public domain, GFDL).
    */
   allowedLicenses?: string[];
@@ -72,7 +105,9 @@ export interface FindImageOptions {
   /**
    * Filenames matching any of these patterns are rejected outright, before
    * scoring — template art, icons, flags, disambiguation markers, etc.
-   * Defaults to a broad, domain-neutral list.
+   * Defaults to a broad, domain-neutral list. Each pattern is tested
+   * against both the raw filename and a copy with `_`/`-` replaced by
+   * spaces, so `\b`-anchored patterns work against real Commons titles.
    */
   rejectPatterns?: RegExp[];
 
@@ -92,6 +127,22 @@ export interface FindImageOptions {
   skipCommonsSearch?: Iterable<string>;
 
   /**
+   * Per-request timeout in milliseconds. Defaults to 10000. Set to 0 to
+   * disable. Without this a hung connection hangs the caller indefinitely.
+   */
+  timeoutMs?: number;
+
+  /**
+   * How many times to retry a request Wikimedia asked us to back off from
+   * (HTTP 429/503, or a `maxlag` error). Defaults to 2. `Retry-After` is
+   * honoured when present.
+   */
+  maxRetries?: number;
+
+  /** Caller-supplied cancellation, combined with the per-request timeout. */
+  signal?: AbortSignal;
+
+  /**
    * Injectable fetch implementation, primarily for testing. Defaults to
    * the global `fetch`.
    */
@@ -104,6 +155,11 @@ export interface WikiImageCandidate {
   url: string;
   descriptionurl: string;
   license: string;
+  licenseCode?: string;
+  licenseUrl?: string;
   artist: string;
+  artistUrl?: string;
+  credit?: string;
+  restrictions?: string;
   score: number;
 }
