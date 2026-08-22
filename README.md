@@ -9,6 +9,10 @@ facts_en: "3 search strategies, 6 allowed licenses, 46 tests that never touch th
 
 # wikimedia-source
 
+[![CI](https://github.com/w2ur/wikimedia-source/actions/workflows/ci.yml/badge.svg)](https://github.com/w2ur/wikimedia-source/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/wikimedia-source)](https://www.npmjs.com/package/wikimedia-source)
+[![zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](https://github.com/w2ur/wikimedia-source/blob/main/package.json)
+
 Find a freely-licensed image on Wikipedia/Wikimedia Commons for anything —
 and get back the attribution you need to publish it legally.
 
