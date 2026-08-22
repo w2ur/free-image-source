@@ -23,16 +23,16 @@ import type {
   Attribution,
   FindImageOptions,
   TitleResolver,
-  WikiImageCandidate,
-  WikimediaImageResult,
+  ImageCandidate,
+  FreeImageResult,
 } from "./types.js";
 
 export type {
   Attribution,
   FindImageOptions,
   TitleResolver,
-  WikiImageCandidate,
-  WikimediaImageResult,
+  ImageCandidate,
+  FreeImageResult,
 } from "./types.js";
 
 export { formatAttribution, type FormatAttributionOptions } from "./attribution.js";
@@ -56,7 +56,7 @@ function toSet(values: Iterable<string> | undefined, fallback: readonly string[]
   return new Set(values ?? fallback);
 }
 
-function attributionFrom(id: string, c: WikiImageCandidate): Attribution {
+function attributionFrom(id: string, c: ImageCandidate): Attribution {
   return {
     id,
     source: "wikimedia",
@@ -90,11 +90,11 @@ function attributionFrom(id: string, c: WikiImageCandidate): Attribution {
  * non-null result is always a file whose license matched the allowlist** —
  * there is no path that returns an unverified image.
  */
-export async function findWikimediaImage(
+export async function findFreeImage(
   id: string,
   name: string,
   options: FindImageOptions
-): Promise<WikimediaImageResult | null> {
+): Promise<FreeImageResult | null> {
   const lang = options.lang ?? "en";
 
   const ctx: ApiContext = {

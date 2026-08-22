@@ -1,17 +1,17 @@
 ---
-name: "Wikimedia Source"
+name: "Free Image Source"
 tagline_fr: "Ne publiez jamais une image dont vous n'avez pas vérifié la licence."
 tagline_en: "Never publish an image whose license you haven't verified."
-about_en: "Find a freely-licensed Wikimedia image for anything, with the attribution needed to publish it. Zero dependencies, TypeScript, ESM."
+about_en: "Find a freely-licensed image on Wikimedia Commons for anything, with the attribution needed to publish it. Zero dependencies, TypeScript, ESM."
 facts_fr: "3 stratégies de recherche, 6 licences autorisées, 46 tests sans réseau."
 facts_en: "3 search strategies, 6 allowed licenses, 46 tests that never touch the network."
 ---
 
-# wikimedia-source
+# free-image-source
 
-[![CI](https://github.com/w2ur/wikimedia-source/actions/workflows/ci.yml/badge.svg)](https://github.com/w2ur/wikimedia-source/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/wikimedia-source)](https://www.npmjs.com/package/wikimedia-source)
-[![zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](https://github.com/w2ur/wikimedia-source/blob/main/package.json)
+[![CI](https://github.com/w2ur/free-image-source/actions/workflows/ci.yml/badge.svg)](https://github.com/w2ur/free-image-source/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/free-image-source)](https://www.npmjs.com/package/free-image-source)
+[![zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](https://github.com/w2ur/free-image-source/blob/main/package.json)
 
 Find a freely-licensed image on Wikipedia/Wikimedia Commons for anything —
 and get back the attribution you need to publish it legally.
@@ -23,7 +23,7 @@ result has been checked against a license allowlist, and arrives with its
 author, license, license URL, and any non-copyright restrictions attached.
 
 ```sh
-npx wikimedia-source "Eddystone Lighthouse"
+npx free-image-source "Eddystone Lighthouse"
 ```
 
 ```
@@ -37,18 +37,23 @@ Photo by Andy Talbot, CC BY-SA 2.0, via Wikimedia Commons
 - **Domain-neutral.** It knows nothing about lighthouses, cats, or
   cathedrals. You supply the vocabulary; it supplies the plumbing.
 
+**On the name:** Wikimedia Commons is the only backend today. The package is
+named for the job rather than the provider so that adding another
+free-licensed source later would not require renaming it — but if you need
+Wikimedia specifically, that is exactly what you get.
+
 ## Install
 
 ```sh
-npm install wikimedia-source
+npm install free-image-source
 ```
 
 ## Usage
 
 ```ts
-import { findWikimediaImage, formatAttribution } from "wikimedia-source";
+import { findFreeImage, formatAttribution } from "free-image-source";
 
-const result = await findWikimediaImage(
+const result = await findFreeImage(
   "eddystone-lighthouse",
   "Eddystone Lighthouse",
   {
@@ -66,7 +71,7 @@ if (result) {
 }
 ```
 
-`findWikimediaImage(id, name, options)` returns
+`findFreeImage(id, name, options)` returns
 `{ imageUrl, attribution } | null`.
 
 ### Attribution
@@ -99,8 +104,8 @@ for most files.
 ### CLI
 
 ```sh
-npx wikimedia-source "Maine Coon" --keywords "cat|feline" --json
-npx wikimedia-source "Tour Eiffel" --lang fr
+npx free-image-source "Maine Coon" --keywords "cat|feline" --json
+npx free-image-source "Tour Eiffel" --lang fr
 ```
 
 Exits `0` on a hit, `1` when nothing acceptable was found, `2` on a usage
@@ -183,7 +188,7 @@ built-in runner, no test-framework dependency. Includes property tests
 (`fast-check`, 1000 runs each) over the license gate and the scorer.
 
 **No test touches the network.** Every test that exercises
-`findWikimediaImage` injects a stub `fetch` through `options.fetch`, and
+`findFreeImage` injects a stub `fetch` through `options.fetch`, and
 that stub throws on any request it does not recognise. An unexpected API
 call fails the suite loudly instead of passing quietly against live
 Wikimedia — which also means the suite tells you when a refactor changes
@@ -191,7 +196,7 @@ Wikimedia — which also means the suite tells you when a refactor changes
 
 ## Stability
 
-`findWikimediaImage` and `formatAttribution` are the public API. Versioned
+`findFreeImage` and `formatAttribution` are the public API. Versioned
 `0.2.0` — the shape is settled, but minor versions may still add fields to
 `Attribution` before 1.0.
 

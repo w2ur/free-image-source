@@ -1,4 +1,4 @@
-# CLAUDE.md — wikimedia-source
+# CLAUDE.md — free-image-source
 
 ## Project Overview
 
@@ -15,7 +15,7 @@ by design — see the "Options" table in `README.md`.
   explain why.
 - Build: `tsc` (see `tsconfig.json`; `rootDir` is the project root, so
   build output lands at `dist/src/` and `dist/test/`).
-- Ships a CLI (`src/cli.ts` -> `bin: wikimedia-source`). The CLI supplies
+- Ships a CLI (`src/cli.ts` -> `bin: free-image-source`). The CLI supplies
   its own User-Agent because it *is* the client; the library still refuses
   to invent one for callers.
 
@@ -39,7 +39,7 @@ npm test            # builds, then runs dist/test/ with node --test
   transforms (`scoreImage`, `isLicenseAllowed`, `decodeEntities`). It never
   reaches the published bundle; the zero-runtime-dependency rule stands.
 - **Tests must never touch the network.** Every test that exercises
-  `findWikimediaImage` injects a stub `fetch` via `options.fetch`
+  `findFreeImage` injects a stub `fetch` via `options.fetch`
   (see `test/helpers.ts`, `createFetchStub`). Do not write a test that
   relies on the global `fetch` reaching `*.wikipedia.org` or
   `commons.wikimedia.org`.
@@ -70,7 +70,7 @@ npm test            # builds, then runs dist/test/ with node --test
   `/stub/` eats "Stubbington". Word-anchor chrome vocabulary; prefix-anchor
   icon themes; and never add a theme whose prefix is an ordinary English
   word (see the Tango/Breeze note in `src/defaults.ts`).
-- Published to npm as `wikimedia-source`. `prepublishOnly` builds and runs
+- Published to npm as `free-image-source`. `prepublishOnly` builds and runs
   the suite, so a publish cannot ship a failing build. The old
   `"private": true` was removed with the owner's sign-off (2026-08-22).
 - No `.nvmrc`, no `engines` pin above Node 24 — see the global CLAUDE.md

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-import { findWikimediaImage } from "./index.js";
+import { findFreeImage } from "./index.js";
 import { formatAttribution } from "./attribution.js";
 
-const USAGE = `wikimedia-source — find a freely-licensed Wikimedia image, with attribution
+const USAGE = `free-image-source — find a freely-licensed Wikimedia image, with attribution
 
 Usage:
-  npx wikimedia-source <name> [options]
+  npx free-image-source <name> [options]
 
 Options:
   --lang <code>       Wikipedia language edition (default: en)
@@ -17,8 +17,8 @@ Options:
   -h, --help          Show this help
 
 Examples:
-  npx wikimedia-source "Eddystone Lighthouse"
-  npx wikimedia-source "Maine Coon" --keywords "cat|feline" --json
+  npx free-image-source "Eddystone Lighthouse"
+  npx free-image-source "Maine Coon" --keywords "cat|feline" --json
 `;
 
 /**
@@ -27,7 +27,7 @@ Examples:
  * User-Agent policy section of the README for why there is no default there.
  */
 const CLI_USER_AGENT =
-  "wikimedia-source-cli/0.2 (https://github.com/w2ur/wikimedia-source)";
+  "free-image-source-cli/0.2 (https://github.com/w2ur/free-image-source)";
 
 function parseArgs(argv: string[]) {
   const positional: string[] = [];
@@ -75,7 +75,7 @@ async function main(): Promise<number> {
   const queryTemplate = flags.get("query");
   const title = flags.get("title");
 
-  const result = await findWikimediaImage("cli", name, {
+  const result = await findFreeImage("cli", name, {
     userAgent: flags.get("user-agent") ?? CLI_USER_AGENT,
     lang: flags.get("lang") ?? "en",
     ...(title ? { wikipediaTitles: { cli: title } } : {}),

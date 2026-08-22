@@ -10,12 +10,12 @@ import {
   toFileInfo,
 } from "./api.js";
 import { scoreImage, type ScoreOptions, NO_MATCH_SCORE } from "./scoring.js";
-import type { WikiImageCandidate } from "./types.js";
+import type { ImageCandidate } from "./types.js";
 
 /** How many top-scored candidates to resolve metadata for. One request, so this is cheap. */
 const CANDIDATE_DEPTH = 5;
 
-export function candidateFrom(info: FileInfo, title: string, score: number): WikiImageCandidate {
+export function candidateFrom(info: FileInfo, title: string, score: number): ImageCandidate {
   return {
     title: info.title || title,
     url: info.url,
@@ -82,7 +82,7 @@ export async function tryImageList(
   entityName: string,
   scoreOptions: Omit<ScoreOptions, "strict">,
   allowedLicenses: readonly string[]
-): Promise<WikiImageCandidate | null> {
+): Promise<ImageCandidate | null> {
   const data = (await wikiApi(ctx, {
     action: "query",
     titles: wikiTitle,
@@ -139,7 +139,7 @@ export async function tryCommonsSearch(
   buildSearchQuery: (name: string) => string,
   scoreOptions: Omit<ScoreOptions, "strict">,
   allowedLicenses: readonly string[]
-): Promise<WikiImageCandidate | null> {
+): Promise<ImageCandidate | null> {
   const data = (await commonsApi(ctx, {
     action: "query",
     generator: "search",

@@ -96,7 +96,7 @@ export const unreachableFetch: typeof globalThis.fetch = async () => {
   throw new Error("network access attempted in a test — this should never happen");
 };
 
-export const USER_AGENT = "wikimedia-source-tests/1.0 (test@example.org)";
+export const USER_AGENT = "free-image-source-tests/1.0 (test@example.org)";
 
 /**
  * Retries are disabled by default in tests: the stub throws on an

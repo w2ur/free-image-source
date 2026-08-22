@@ -34,7 +34,7 @@ export interface Attribution {
   fileTitle: string;
 }
 
-export interface WikimediaImageResult {
+export interface FreeImageResult {
   imageUrl: string;
   attribution: Attribution;
 }
@@ -150,7 +150,7 @@ export interface FindImageOptions {
 }
 
 /** A scored, license-checked, ready-to-use Wikimedia file candidate. */
-export interface WikiImageCandidate {
+export interface ImageCandidate {
   title: string;
   url: string;
   descriptionurl: string;

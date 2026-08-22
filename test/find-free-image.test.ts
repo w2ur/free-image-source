@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { findWikimediaImage } from "../src/index.js";
+import { findFreeImage } from "../src/index.js";
 import {
   createFetchStub,
   unreachableFetch,
@@ -62,7 +62,7 @@ test("strategy 1 (article image list) succeeds: strategies 2 and 3 never run, at
     }),
   ]);
 
-  const result = await findWikimediaImage("eddystone", "Eddystone Lighthouse", {
+  const result = await findFreeImage("eddystone", "Eddystone Lighthouse", {
     ...baseOptions,
     wikipediaTitles: { eddystone: "Eddystone_Lighthouse" },
     keywords: KEYWORDS,
@@ -122,7 +122,7 @@ test("strategy 1 resolves all top candidates in ONE batched imageinfo request", 
     }),
   ]);
 
-  const result = await findWikimediaImage("eddystone", "Eddystone Lighthouse", {
+  const result = await findFreeImage("eddystone", "Eddystone Lighthouse", {
     ...baseOptions,
     wikipediaTitles: { eddystone: "Eddystone_Lighthouse" },
     fetch: stub.fetch,
@@ -172,7 +172,7 @@ test("strategy 2 (article lead image) verifies the license instead of assuming i
     }),
   ]);
 
-  const result = await findWikimediaImage("eddystone", "Eddystone Lighthouse", {
+  const result = await findFreeImage("eddystone", "Eddystone Lighthouse", {
     ...baseOptions,
     wikipediaTitles: { eddystone: "Eddystone_Lighthouse" },
     keywords: KEYWORDS,
@@ -231,7 +231,7 @@ test("strategy 2 refuses a non-free lead image and falls through to Commons sear
     }),
   ]);
 
-  const result = await findWikimediaImage("eddystone", "Eddystone Lighthouse", {
+  const result = await findFreeImage("eddystone", "Eddystone Lighthouse", {
     ...baseOptions,
     wikipediaTitles: { eddystone: "Eddystone_Lighthouse" },
     fetch: stub.fetch,
@@ -278,7 +278,7 @@ test("strategy 2 refuses a lead image that matches the reject list", async () =>
     commonsSearchRoute({ query: { pages: [] } }),
   ]);
 
-  const result = await findWikimediaImage("eddystone", "Eddystone Lighthouse", {
+  const result = await findFreeImage("eddystone", "Eddystone Lighthouse", {
     ...baseOptions,
     wikipediaTitles: { eddystone: "Eddystone_Lighthouse" },
     fetch: stub.fetch,
@@ -304,7 +304,7 @@ test("strategy 3 (Commons search) folds search and metadata into one request", a
     }),
   ]);
 
-  const result = await findWikimediaImage("eddystone", "Eddystone Lighthouse", {
+  const result = await findFreeImage("eddystone", "Eddystone Lighthouse", {
     ...baseOptions,
     // No wikipediaTitles at all -- forces the Commons-search-only path.
     keywords: KEYWORDS,
@@ -319,7 +319,7 @@ test("strategy 3 (Commons search) folds search and metadata into one request", a
 });
 
 test("skipCommonsSearch prevents strategy 3 from running for a listed id, without any fetch call", async () => {
-  const result = await findWikimediaImage("eddystone", "Eddystone Lighthouse", {
+  const result = await findFreeImage("eddystone", "Eddystone Lighthouse", {
     ...baseOptions,
     keywords: KEYWORDS,
     skipCommonsSearch: ["eddystone"],
@@ -332,7 +332,7 @@ test("skipCommonsSearch prevents strategy 3 from running for a listed id, withou
 test("returns null when no strategy finds an acceptable candidate", async () => {
   const stub = createFetchStub([commonsSearchRoute({ query: { pages: [] } })]);
 
-  const result = await findWikimediaImage("eddystone", "Eddystone Lighthouse", {
+  const result = await findFreeImage("eddystone", "Eddystone Lighthouse", {
     ...baseOptions,
     keywords: KEYWORDS,
     fetch: stub.fetch,
@@ -359,7 +359,7 @@ test("lang selects the Wikipedia edition; Commons stays shared", async () => {
     }),
   ]);
 
-  const result = await findWikimediaImage("eddystone", "Phare d Eddystone", {
+  const result = await findFreeImage("eddystone", "Phare d Eddystone", {
     ...baseOptions,
     lang: "fr",
     wikipediaTitles: { eddystone: "Phare_d'Eddystone" },
@@ -370,7 +370,7 @@ test("lang selects the Wikipedia edition; Commons stays shared", async () => {
   assert.equal(stub.urls[0]!.hostname, "fr.wikipedia.org");
   // Control: the default is en, so this hostname is a signal and not a constant.
   const enStub = createFetchStub([imageListRoute({ query: { pages: [{ images: [] }] } })]);
-  await findWikimediaImage("eddystone", "Eddystone Lighthouse", {
+  await findFreeImage("eddystone", "Eddystone Lighthouse", {
     ...baseOptions,
     wikipediaTitles: { eddystone: "Eddystone_Lighthouse" },
     skipCommonsSearch: ["eddystone"],
@@ -395,7 +395,7 @@ test("restrictions on a file are surfaced, not swallowed", async () => {
     }),
   ]);
 
-  const result = await findWikimediaImage("eddystone", "Eddystone Lighthouse", {
+  const result = await findFreeImage("eddystone", "Eddystone Lighthouse", {
     ...baseOptions,
     fetch: stub.fetch,
   });

@@ -1,5 +1,5 @@
 {
-  "name": "wikimedia-source",
+  "name": "free-image-source",
   "version": "0.2.0",
   "description": "Find a freely-licensed Wikimedia image for anything, with the attribution needed to publish it. Zero dependencies.",
   "type": "module",
@@ -22,6 +22,8 @@
     "node": ">=20"
   },
   "scripts": {
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
     "build": "tsc",
     "pretest": "npm run build",
     "test": "node --test dist/test/*.test.js",
@@ -47,16 +49,16 @@
     "typescript",
     "esm"
   ],
-  "homepage": "https://github.com/w2ur/wikimedia-source#readme",
+  "homepage": "https://github.com/w2ur/free-image-source#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/w2ur/wikimedia-source.git"
+    "url": "git+https://github.com/w2ur/free-image-source.git"
   },
   "bugs": {
-    "url": "https://github.com/w2ur/wikimedia-source/issues"
+    "url": "https://github.com/w2ur/free-image-source/issues"
   },
   "bin": {
-    "wikimedia-source": "./dist/src/cli.js"
+    "free-image-source": "./dist/src/cli.js"
   },
   "sideEffects": false,
   "publishConfig": {

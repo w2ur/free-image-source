@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { findWikimediaImage } from "../src/index.js";
+import { findFreeImage } from "../src/index.js";
 import { createFetchStub, imageInfoPage, USER_AGENT, type FetchRoute } from "./helpers.js";
 
 const searchRoute = (over: Partial<FetchRoute> = {}): FetchRoute => ({
@@ -20,7 +20,7 @@ const searchRoute = (over: Partial<FetchRoute> = {}): FetchRoute => ({
 });
 
 const find = (fetch: typeof globalThis.fetch, extra = {}) =>
-  findWikimediaImage("eddystone", "Eddystone Lighthouse", {
+  findFreeImage("eddystone", "Eddystone Lighthouse", {
     userAgent: USER_AGENT,
     fetch,
     timeoutMs: 0,
