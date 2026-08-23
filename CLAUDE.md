@@ -71,8 +71,4 @@ npm test            # builds, then runs dist/test/ with node --test
   icon themes; and never add a theme whose prefix is an ordinary English
   word (see the Tango/Breeze note in `src/defaults.ts`).
 - Published to npm as `free-image-source`. `prepublishOnly` builds and runs
-  the suite, so a publish cannot ship a failing build. The old
-  `"private": true` was removed with the owner's sign-off (2026-08-22).
-- No `.nvmrc`, no `engines` pin above Node 24 — see the global CLAUDE.md
-  policy on Vercel/Node compatibility (not that this repo deploys to
-  Vercel, but the same ceiling applies portfolio-wide).
+  the suite, so a publish cannot ship a failing build.
