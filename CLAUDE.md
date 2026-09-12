@@ -62,7 +62,7 @@ npm test            # builds, then runs dist/test/ with node --test
   returns an image whose license was not checked against `allowedLicenses`.
   Strategy 2 (the article lead image) violated this until 0.2.0 by
   returning the thumbnail with `license: "See Wikipedia"`; that is what the
-  regression tests in `test/find-wikimedia-image.test.ts` pin. If a change
+  regression tests in `test/find-free-image.test.ts` pin. If a change
   makes any strategy return a candidate without passing `isUsableFile` or
   an equivalent check, it is a regression of the point of the package.
 - **Default `rejectPatterns` must stay anchored.** Unanchored substrings
