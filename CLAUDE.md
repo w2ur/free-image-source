@@ -5,7 +5,7 @@
 A small, focused TypeScript library: given an id, a display name, and a
 Wikimedia-compliant User-Agent, find a freely-licensed image on
 Wikipedia/Wikimedia Commons and return it with attribution. Domain-neutral
-by design — see the "Options" table in `README.md`.
+by design — see the "Options" table in `docs/api.md`.
 
 ## Tech Stack
 
